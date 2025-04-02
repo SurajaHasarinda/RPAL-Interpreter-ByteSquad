@@ -17,7 +17,3 @@ class Token:
     # Mark the token as the last token (important for the parsing process).    
     def make_last_token(self):
         self.is_last_token = True
-        
-    # Mark the token as a keyword (used in the filter_tokens).    
-    def make_keyword(self):
-        self.type = "<KEYWORD>"

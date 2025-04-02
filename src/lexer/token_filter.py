@@ -25,7 +25,7 @@ def filter_tokens(file_name):
     for token in token_list:
         # Mark identifiers that match keywords as actual keywords
         if token.type == "<IDENTIFIER>" and token.content in keywords:
-            token.make_keyword()
+            token.type = "<KEYWORD>"
 
         # Skip tokens that should be deleted
         if token.type in {"<DELETE>", "<INVALID>"} or token.content == "\n":

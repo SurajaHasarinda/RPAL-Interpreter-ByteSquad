@@ -8,13 +8,11 @@ def tokenize(characters):
     whitespace = {' ', '\t'}
     newline = '\n'
     
-    tokens, token_names, line_numbers = [], [], []
+    tokens = []
     line_number = 1
     
-    def add_token(value, token_type, line):
-        tokens.append(value)
-        token_names.append(token_type)
-        line_numbers.append(line)
+    def add_token(value, token_type):
+        tokens.append(Token(value, token_type, line_number))
     
     i = 0
     n = len(characters)
@@ -27,7 +25,7 @@ def tokenize(characters):
             i += 1
             while i < n and (characters[i] in letters or characters[i] in digits or characters[i] == '_'):
                 i += 1
-            add_token("".join(characters[start:i]), '<IDENTIFIER>', line_number)
+            add_token("".join(characters[start:i]), '<IDENTIFIER>')
         
         # Integer or Invalid
         elif current_char in digits:
@@ -38,17 +36,16 @@ def tokenize(characters):
             if i < n and characters[i] in letters:  # Invalid token
                 while i < n and (characters[i] in letters or characters[i] in digits):
                     i += 1
-                add_token("".join(characters[start:i]), '<INVALID>', line_number)
+                add_token("".join(characters[start:i]), '<INVALID>')
             else:
-                add_token("".join(characters[start:i]), '<INTEGER>', line_number)
+                add_token("".join(characters[start:i]), '<INTEGER>')
         
         # Comment
         elif current_char == '/' and i + 1 < n and characters[i + 1] == '/':
-            start = i
             i += 2
             while i < n and characters[i] != '\n':
                 i += 1
-            add_token("".join(characters[start:i]), '<DELETE>', line_number)
+            add_token("//", '<DELETE>')  # Marking as <DELETE>
         
         # String
         elif current_char == "'":
@@ -60,27 +57,22 @@ def tokenize(characters):
                 i += 1
             if i < n:  # Properly closed string
                 i += 1
-                add_token("".join(characters[start:i]), '<STRING>', line_number)
+                add_token("".join(characters[start:i]), '<STRING>')
             else:
-                print("String is not closed properly.")
+                print("Error: String is not closed properly.")
                 exit(1)
         
         # Punctuation
         elif current_char in punctuation:
-            add_token(current_char, current_char, line_number)
+            add_token(current_char, current_char)
             i += 1
         
         # Whitespace
         elif current_char in whitespace:
-            start = i
-            i += 1
-            while i < n and characters[i] in whitespace:
-                i += 1
-            add_token(' ', '<DELETE>', line_number)
+            i += 1  # Skip whitespace
         
         # Newline
-        elif current_char == '\n':
-            add_token(newline, '<DELETE>', line_number)
+        elif current_char == newline:
             line_number += 1
             i += 1
         
@@ -92,21 +84,16 @@ def tokenize(characters):
                 if characters[i] == '/' and i + 1 < n and characters[i + 1] == '/':
                     break  # Comment detected
                 i += 1
-            add_token("".join(characters[start:i]), '<OPERATOR>', line_number)
+            add_token("".join(characters[start:i]), '<OPERATOR>')
         
         # Invalid character
         else:
-            print(f"Invalid character: {current_char} at position {i}")
+            print(f"Error: Invalid character '{current_char}' at position {i}")
             exit(1)
     
-    # Convert tokens into Token objects
-    token_objects = []
-    for idx, token_value in enumerate(tokens):
-        token_obj = Token(token_value, token_names[idx], line_numbers[idx])
-        if idx == 0:
-            token_obj.make_first_token()
-        if idx == len(tokens) - 1:
-            token_obj.make_last_token()
-        token_objects.append(token_obj)
+    # Mark first and last tokens
+    if tokens:
+        tokens[0].make_first_token()
+        tokens[-1].make_last_token()
     
-    return token_objects
+    return tokens
