@@ -1,49 +1,43 @@
 from src.lexer.lexical_analyzer import tokenize
 
+# Processes a file to tokenize its contents, filters out unwanted tokens, and identifies invalid ones.
 def filter_tokens(file_name):
-    # RPAL keywords 
-    keywords = ["let", "in", "where", "rec", "fn", "aug", "or", "not", "gr", "ge", "ls", "le", "eq", "ne", "true", "false", "nil", "dummy", "within", "and"]
-    
-    characters = []
-    token_list = []
-    invalid_token_present = False
-    invalid_token = None
-    
+
+    # RPAL keywords
+    keywords = {"let", "in", "where", "rec", "fn", "aug", "or", "not", "gr", "ge", 
+                "ls", "le", "eq", "ne", "true", "false", "nil", "dummy", "within", "and"}
+
     try:
         with open(file_name, 'r') as file:
-            for line in file:
-                for character in line:
-                    characters.append(character)
-            token_list = tokenize(characters)
-
+            characters = list(file.read())  # Read file content as a list of characters
     except FileNotFoundError:
-        print("File not found.")
+        print(f"Error: File '{file_name}' not found.")
         exit(1)
     except Exception as e:
-        print("An error occurred:", e)
+        print(f"An error occurred: {e}")
         exit(1)
-    
-    # Iterate through token list in reverse order. This reverse iteration will correctly handle the consequent <DELETE>s
-    for i in range(len(token_list) - 1, -1, -1):
-        token = token_list[i]
-        
-        # If the token is an identifier and it is a keyword, it should be marked as a keyword.
+
+    token_list = tokenize(characters)
+    filtered_tokens = []
+    invalid_token = None
+    invalid_token_found = False
+
+    for token in token_list:
+        # Mark identifiers that match keywords as actual keywords
         if token.type == "<IDENTIFIER>" and token.content in keywords:
             token.make_keyword()
-        
-        # If the token is should be deleted, it should be removed from the list.
-        if token.type == "<DELETE>" or token.content == "\n":            
-            token_list.remove(token)
-            
-        # If there are invalid tokens, the first invalid token will be marked as the invalid token.    
-        if token.type == "<INVALID>":
-            if invalid_token_present == False:
+
+        # Skip tokens that should be deleted
+        if token.type in {"<DELETE>", "<INVALID>"} or token.content == "\n":
+            if token.type == "<INVALID>" and not invalid_token_found:
                 invalid_token = token
-                
-            invalid_token_present = True
-            
-    # If the previous last token is removed in the previous loop, the last token will be the last token in the list.
-    if len(token_list) > 0:
-        token_list[-1].is_last_token = True
+                invalid_token_found = True
+            continue
         
-    return token_list, invalid_token_present, invalid_token
+        filtered_tokens.append(token)
+
+    # Mark the last token if the list is not empty
+    if filtered_tokens:
+        filtered_tokens[-1].is_last_token = True
+
+    return filtered_tokens, invalid_token_found, invalid_token

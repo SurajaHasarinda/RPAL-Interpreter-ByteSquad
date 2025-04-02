@@ -9,86 +9,104 @@ def tokenize(characters):
     newline = '\n'
     
     tokens, token_names, line_numbers = [], [], []
-    i, line_number = 0, 1
+    line_number = 1
     
     def add_token(value, token_type, line):
         tokens.append(value)
         token_names.append(token_type)
         line_numbers.append(line)
     
-    while i < len(characters):
+    i = 0
+    n = len(characters)
+    while i < n:
         current_char = characters[i]
         
-        if current_char in letters:  # Identifier
+        # Identifier
+        if current_char in letters:
             start = i
-            while i < len(characters) and (characters[i] in letters or characters[i] in digits or characters[i] == '_'):
+            i += 1
+            while i < n and (characters[i] in letters or characters[i] in digits or characters[i] == '_'):
                 i += 1
             add_token("".join(characters[start:i]), '<IDENTIFIER>', line_number)
         
-        elif current_char in digits:  # Integer or Invalid
+        # Integer or Invalid
+        elif current_char in digits:
             start = i
-            while i < len(characters) and characters[i] in digits:
+            i += 1
+            while i < n and characters[i] in digits:
                 i += 1
-            if i < len(characters) and characters[i] in letters:  # Invalid token
-                while i < len(characters) and (characters[i] in letters or characters[i] in digits):
+            if i < n and characters[i] in letters:  # Invalid token
+                while i < n and (characters[i] in letters or characters[i] in digits):
                     i += 1
                 add_token("".join(characters[start:i]), '<INVALID>', line_number)
             else:
                 add_token("".join(characters[start:i]), '<INTEGER>', line_number)
         
-        elif current_char == '/' and i + 1 < len(characters) and characters[i + 1] == '/':  # Comment
+        # Comment
+        elif current_char == '/' and i + 1 < n and characters[i + 1] == '/':
             start = i
-            while i < len(characters) and characters[i] != '\n':
+            i += 2
+            while i < n and characters[i] != '\n':
                 i += 1
             add_token("".join(characters[start:i]), '<DELETE>', line_number)
         
-        elif current_char == "'":  # String
+        # String
+        elif current_char == "'":
             start = i
             i += 1
-            while i < len(characters) and characters[i] != "'":
+            while i < n and characters[i] != "'":
                 if characters[i] == '\n':
                     line_number += 1
                 i += 1
-            if i < len(characters):  # Properly closed string
+            if i < n:  # Properly closed string
                 i += 1
                 add_token("".join(characters[start:i]), '<STRING>', line_number)
             else:
                 print("String is not closed properly.")
                 exit(1)
         
-        elif current_char in punctuation:  # Punctuation
+        # Punctuation
+        elif current_char in punctuation:
             add_token(current_char, current_char, line_number)
             i += 1
         
-        elif current_char in whitespace:  # Whitespace (Deleted)
-            while i < len(characters) and characters[i] in whitespace:
+        # Whitespace
+        elif current_char in whitespace:
+            start = i
+            i += 1
+            while i < n and characters[i] in whitespace:
                 i += 1
             add_token(' ', '<DELETE>', line_number)
         
-        elif current_char == '\n':  # Newline (Deleted)
+        # Newline
+        elif current_char == '\n':
             add_token(newline, '<DELETE>', line_number)
             line_number += 1
             i += 1
         
-        elif current_char in operators:  # Operator
+        # Operator
+        elif current_char in operators:
             start = i
-            while i < len(characters) and characters[i] in operators:
-                if characters[i] == '/' and i + 1 < len(characters) and characters[i + 1] == '/':
-                    break  # Comment detected, handled above
+            i += 1
+            while i < n and characters[i] in operators:
+                if characters[i] == '/' and i + 1 < n and characters[i + 1] == '/':
+                    break  # Comment detected
                 i += 1
             add_token("".join(characters[start:i]), '<OPERATOR>', line_number)
         
-        else:  # Invalid character
+        # Invalid character
+        else:
             print(f"Invalid character: {current_char} at position {i}")
             exit(1)
     
     # Convert tokens into Token objects
+    token_objects = []
     for idx, token_value in enumerate(tokens):
         token_obj = Token(token_value, token_names[idx], line_numbers[idx])
         if idx == 0:
             token_obj.make_first_token()
         if idx == len(tokens) - 1:
             token_obj.make_last_token()
-        tokens[idx] = token_obj
+        token_objects.append(token_obj)
     
-    return tokens
+    return token_objects
