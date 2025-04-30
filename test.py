@@ -3,7 +3,7 @@ import subprocess
 
 def run_tests():
     # Get the path to the Tests directory
-    tests_dir = os.path.join(os.getcwd(), 'Tests')
+    tests_dir = os.path.join(os.getcwd(), 'tests')
     
     # Check if Tests directory exists
     if not os.path.exists(tests_dir):
