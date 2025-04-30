@@ -2,493 +2,317 @@ from src.lexer.token_filter import filter_tokens
 from src.parser.stack import Stack
 from src.parser.node import *
 
-stack = Stack("AST") # This stack is used to build the abstract syntax tree.
+ast_builder = Stack("AST")  # Stack for building the AST
 
-# Building AST (bottom-up)
-def build_tree(value, num_children):
-    node = Node(value)
-    node.children = [None] * num_children
-    
-    for i in range (0, num_children):
-        if stack.is_empty():
-            print("Stack is empty")
+def build_ATS(label, child_count):
+    node = Node(label)
+    node.children = [None] * child_count
+    for idx in range(child_count):
+        if ast_builder.is_empty():
+            print("Error: AST stack is empty during node creation.")
             exit(1)
-        node.children[num_children - i - 1] = stack.pop()
-        
-    stack.push(node)
+        node.children[child_count - idx - 1] = ast_builder.pop()
+    ast_builder.push(node)
 
-# This function is used to read the expected token. 
-def read(expected_token):
-    if tokens[0].content != expected_token:
-        print("Syntax error in line " + str(tokens[0].line) + ": Expected " + str(expected_token) + " but got " + str(tokens[0].content))
+def expect(token_value):
+    if tokens[0].content != token_value:
+        print(f"Syntax error at line {tokens[0].line}: Expected '{token_value}', found '{tokens[0].content}'")
         exit(1)
-     
     if not tokens[0].is_last_token:
-        del tokens[0]   
-        
+        del tokens[0]
     else:
         if tokens[0].type != ")":
-            tokens[0].type = ")"    
-            
+            tokens[0].type = ")"
 
-def parse(file_name):
+def parse(file_path):
     global tokens
-    tokens, invalid_flag, invalid_token = filter_tokens(file_name)
-    
-    # If there are invalid tokens, we cannot proceed with the parsing.
-    if invalid_flag:
-        print("Invalid token present in line " + str(invalid_token.line) + ": " + str(invalid_token.content))
+    tokens, has_invalid, bad_token = filter_tokens(file_path)
+    if has_invalid:
+        print(f"Invalid token at line {bad_token.line}: {bad_token.content}")
         exit(1)
-    
-    procedure_E()
-    
-    if not stack.is_empty():
-        root = stack.pop()
+    E()
+    if not ast_builder.is_empty():
+        return ast_builder.pop()
     else:
-        print("Stack is empty")
+        print("Error: AST stack is empty after parsing.")
         exit(1)
-        
-    return root
- 
-############################################################## 
-def procedure_E():      
-    # E -> 'let' D 'in' E 
+
+def E():
     if tokens[0].content == "let":
-        read("let")
-        procedure_D()
-        
+        expect("let")
+        D()
         if tokens[0].content == "in":
-            read("in")
-            procedure_E()
-            build_tree("let", 2)
+            expect("in")
+            E()
+            build_ATS("let", 2)
         else:
-            print("Syntax error in line " + str(tokens[0].line) + ": 'in' expected")
+            print(f"Syntax error at line {tokens[0].line}: Missing 'in' after 'let'")
             exit(1)
-    
-    # E -> 'fn'  Vb+ '.' E    
     elif tokens[0].content == "fn":
-        read("fn")
-        n = 0
-
-        while tokens[0].type == "<IDENTIFIER>" or tokens[0].type == "(": 
-            procedure_Vb()
-            n += 1
-            
-        if n == 0:
-            print("Syntax error in line " + str(tokens[0].line) + ": Identifier or '(' expected")
+        expect("fn")
+        vb_count = 0
+        while tokens[0].type == "<IDENTIFIER>" or tokens[0].type == "(":
+            Vb()
+            vb_count += 1
+        if vb_count == 0:
+            print(f"Syntax error at line {tokens[0].line}: Expected identifier or '(' after 'fn'")
             exit(1)
-            
         if tokens[0].content == ".":
-            read(".")
-            procedure_E()
-            build_tree("lambda", n + 1)
+            expect(".")
+            E()
+            build_ATS("lambda", vb_count + 1)
         else:
-            print("Syntax error in line " + str(tokens[0].line) + ": '.' expected")
+            print(f"Syntax error at line {tokens[0].line}: Expected '.' after variable bindings")
             exit(1)
-             
-    # E  ->  Ew    
     else:
-        procedure_Ew()
+        Ew()
 
-##############################################################
-def procedure_Ew():
-    # Ew -> T    
-    procedure_T()
-    
-    # Ew -> T 'where' Dr   
+def Ew():
+    T()
     if tokens[0].content == "where":
-        read("where")
-        procedure_Dr()
-        build_tree("where", 2)  
-        
-##############################################################
-def procedure_T():     
-    # T -> Ta
-    procedure_Ta()
-    
-    # T -> Ta (','  Ta)+
-    n = 0
+        expect("where")
+        Dr()
+        build_ATS("where", 2)
+
+def T():
+    Ta()
+    tau_count = 0
     while tokens[0].content == ",":
-        read(",")
-        procedure_Ta()
-        n += 1
-        
-    if n > 0:
-        build_tree("tau", n+1)
-        
-##############################################################      
-def procedure_Ta():  
-    # Ta -> Tc
-    procedure_Tc()
-    
-    # Ta -> Ta 'aug' Tc 
+        expect(",")
+        Ta()
+        tau_count += 1
+    if tau_count > 0:
+        build_ATS("tau", tau_count + 1)
+
+def Ta():
+    Tc()
     while tokens[0].content == "aug":
-        read("aug")
-        procedure_Tc()
-        build_tree("aug", 2)  
-        
-##############################################################
-def procedure_Tc():   
-    # Tc -> B
-    procedure_B()
-    
-    # Tc -> B '->' Tc '|' Tc
-    if tokens[0].content == "->":  
-        read("->")
-        procedure_Tc()
-        
+        expect("aug")
+        Tc()
+        build_ATS("aug", 2)
+
+def Tc():
+    B()
+    if tokens[0].content == "->":
+        expect("->")
+        Tc()
         if tokens[0].content == "|":
-            read("|")
-            procedure_Tc()
-            build_tree("->", 3)
+            expect("|")
+            Tc()
+            build_ATS("->", 3)
         else:
-            print("Syntax error in line " + str(tokens[0].line) + ": '|' expected")
+            print(f"Syntax error at line {tokens[0].line}: Expected '|' after '->'")
             exit(1)
-            
-##############################################################
-def procedure_B():
-    # B -> Bt
-    procedure_Bt()
-    
-    # B -> B 'or' Bt
+
+def B():
+    Bt()
     while tokens[0].content == "or":
-        read("or")
-        procedure_Bt()
-        build_tree("or", 2) 
+        expect("or")
+        Bt()
+        build_ATS("or", 2)
 
-##############################################################
-def procedure_Bt():    
-    # Bt -> Bs
-    procedure_Bs()
-    
-    # Bt -> Bt '&' Bs
+def Bt():
+    Bs()
     while tokens[0].content == "&":
-        read("&")
-        procedure_Bs()
-        build_tree("&", 2)
-        
-##############################################################
-def procedure_Bs():
-    # Bs -> 'not' Bp
+        expect("&")
+        Bs()
+        build_ATS("&", 2)
+
+def Bs():
     if tokens[0].content == "not":
-        read("not")
-        procedure_Bp()
-        build_tree("not", 1)
-        
-    # Bs -> Bp
+        expect("not")
+        Bp()
+        build_ATS("not", 1)
     else:
-        procedure_Bp()
-        
-##############################################################
-def procedure_Bp():           
-    # Bp -> A
-    procedure_A()
-    
-    # Bp -> A ('gr' | '>' ) A
-    if tokens[0].content == "gr" or tokens[0].content == ">":
-        read(tokens[0].content)
-        procedure_A()
-        build_tree("gr", 2)
-        
-    # Bp -> A ('ge' | '>=' ) A
-    elif tokens[0].content == "ge" or tokens[0].content == ">=":
-        read(tokens[0].content)
-        procedure_A()
-        build_tree("ge", 2)
-        
-    # Bp -> A ('ls' | '<' ) A
-    elif tokens[0].content == "ls" or tokens[0].content == "<":
-        read(tokens[0].content)
-        procedure_A()
-        build_tree("ls", 2)
-        
-    # Bp -> A ('le' | '<=' ) A
-    elif tokens[0].content == "le" or tokens[0].content == "<=":
-        read(tokens[0].content)
-        procedure_A()
-        build_tree("le", 2)
-        
-    # Bp -> A 'eq' A
-    elif tokens[0].content == "eq":
-        read("eq")
-        procedure_A()
-        build_tree("eq", 2)
-        
-    # Bp -> A 'ne' A
-    elif tokens[0].content == "ne":
-        read("ne")
-        procedure_A()
-        build_tree("ne", 2)
+        Bp()
 
-##############################################################
-def procedure_A():
-    # A -> '+' At
-    if tokens[0].content=="+":
-        read("+")
-        procedure_At()
-        
-    # A -> '-' At
-    elif tokens[0].content=="-":
-        read("-")
-        procedure_At()
-        build_tree("neg", 1)
-        
-    # A -> At
+def Bp():
+    A()
+    if tokens[0].content in ["gr", ">", "ge", ">=", "ls", "<", "le", "<=", "eq", "ne"]:
+        op = tokens[0].content
+        expect(op)
+        A()
+        op_map = {
+            "gr": "gr", ">": "gr",
+            "ge": "ge", ">=": "ge",
+            "ls": "ls", "<": "ls",
+            "le": "le", "<=": "le",
+            "eq": "eq", "ne": "ne"
+        }
+        build_ATS(op_map[op], 2)
+
+def A():
+    if tokens[0].content == "+":
+        expect("+")
+        At()
+    elif tokens[0].content == "-":
+        expect("-")
+        At()
+        build_ATS("neg", 1)
     else:
-        procedure_At()
-        
+        At()
     while tokens[0].content in ["+", "-"]:
-        # A -> A '+' At
-        if tokens[0].content=="+":
-            read("+")
-            procedure_At()
-            build_tree("+", 2)
-            
-        # A -> A '-' At
-        else:
-            read("-")
-            procedure_At()
-            build_tree("-", 2)
-    
-##############################################################
-def procedure_At():
-    # At -> Af
-    procedure_Af()
-    
+        op = tokens[0].content
+        expect(op)
+        At()
+        build_ATS(op, 2)
+
+def At():
+    Af()
     while tokens[0].content in ["*", "/"]:
-        # At -> At '*' Af
-        if tokens[0].content=="*":
-            read("*")
-            procedure_Af()
-            build_tree("*", 2)
-            
-        # At -> At '/' Af
-        else:
-            read("/")
-            procedure_Af()
-            build_tree("/", 2)
+        op = tokens[0].content
+        expect(op)
+        Af()
+        build_ATS(op, 2)
 
-##############################################################
-def procedure_Af():    
-    # Af -> Ap 
-    procedure_Ap()
-    
-    # Af -> Ap '**' Af
-    if tokens[0].content == "**":     
-        read("**")
-        procedure_Af()
-        build_tree("**", 2)
- 
-##############################################################    
-def procedure_Ap():
-    # Ap -> R
-    procedure_R()
-    
-    # Ap -> Ap '@' <IDENTIFIER> R
+def Af():
+    Ap()
+    if tokens[0].content == "**":
+        expect("**")
+        Af()
+        build_ATS("**", 2)
+
+def Ap():
+    R()
     while tokens[0].content == "@":
-        read("@")
-        
+        expect("@")
         if tokens[0].type == "<IDENTIFIER>":
-            build_tree("<ID:" + tokens[0].content + ">", 0)
-            read(tokens[0].content)
-            procedure_R()
-            build_tree("@", 3)            
+            build_ATS(f"<ID:{tokens[0].content}>", 0)
+            expect(tokens[0].content)
+            R()
+            build_ATS("@", 3)
         else:
-            print("Syntax error in line " + str(tokens[0].line) + ": Identifier expected")
+            print(f"Syntax error at line {tokens[0].line}: Expected identifier after '@'")
             exit(1)
-    
-##############################################################
-def procedure_R():
-    # R -> Rn
-    procedure_Rn()
-    
-    # R -> R Rn
-    while  tokens[0].type in ["<IDENTIFIER>", "<INTEGER>", "<STRING>"] or tokens[0].content in ["true", "false","nil", "(", "dummy"]: 
-        procedure_Rn()
-        build_tree("gamma", 2)
 
-##############################################################
-def procedure_Rn():   
-    value = tokens[0].content
-    
-    # Rn -> <IDENTIFIER>
+def R():
+    Rn()
+    while tokens[0].type in ["<IDENTIFIER>", "<INTEGER>", "<STRING>"] or tokens[0].content in ["true", "false", "nil", "(", "dummy"]:
+        Rn()
+        build_ATS("gamma", 2)
+
+def Rn():
+    val = tokens[0].content
     if tokens[0].type == "<IDENTIFIER>":
-        read(value)
-        build_tree("<ID:" + value + ">", 0)
-    
-    # Rn -> <INTEGER>    
+        expect(val)
+        build_ATS(f"<ID:{val}>", 0)
     elif tokens[0].type == "<INTEGER>":
-        read(value)
-        build_tree("<INT:" + value + ">", 0)
-        
-    # Rn -> <STRING>    
+        expect(val)
+        build_ATS(f"<INT:{val}>", 0)
     elif tokens[0].type == "<STRING>":
-        read(value)
-        build_tree("<STR:" + value + ">", 0)
-        
-    # Rn -> 'true'
-    #    -> 'false'
-    #    -> 'nil'
-    #    -> 'dummy'    
-    elif value in ["true", "false", "nil", "dummy"]:
-        read(value)
-        build_tree("<" + value + ">", 0)
-      
-    # Rn -> '(' E ')'    
-    elif value == "(":
-        read("(")
-        procedure_E()
-        
-        if tokens[0].content == ")":     
-            read(")")
-        else:
-            print("Syntax error in line " + str(tokens[0].line) + ": ')' expected")
-            exit(1)
-            
-    else:
-        print("Syntax error in line " + str(tokens[0].line) + ": Identifier, Integer, String, 'true', 'false', 'nil', 'dummy' or '(' expected")
-        exit(1)
-
-##############################################################
-def procedure_D():
-    # D -> Da
-    procedure_Da()
-    
-    # D -> Da 'within' D
-    if tokens[0].content == "within":
-        read("within")
-        procedure_D()
-        build_tree("within", 2)
-    
-##############################################################
-def procedure_Da():
-    # Da -> Dr
-    procedure_Dr()
-    
-    # Da -> Dr ('and' Dr)+
-    n = 0
-    while tokens[0].content == "and":
-        read("and")
-        procedure_Dr()
-        n += 1
-        
-    if n > 0:  
-        build_tree("and", n + 1)
-    
-##############################################################
-def procedure_Dr():
-    # Dr -> 'rec' Db
-    if tokens[0].content == "rec":
-        read("rec")
-        procedure_Db()
-        build_tree("rec", 1)
-        
-    # Dr -> Db
-    else:
-        procedure_Db()
-    
-##############################################################
-def procedure_Db():    
-    value = tokens[0].content
-    
-    # Db -> '(' D ')'
-    if value == "(":
-        read("(")
-        procedure_D()
-        
+        expect(val)
+        build_ATS(f"<STR:{val}>", 0)
+    elif val in ["true", "false", "nil", "dummy"]:
+        expect(val)
+        build_ATS(f"<{val}>", 0)
+    elif val == "(":
+        expect("(")
+        E()
         if tokens[0].content == ")":
-            read(")")
+            expect(")")
         else:
-            print("Syntax error in line " + str(tokens[0].line) + ": ')' expected")
-            exit(1)
-
-    elif tokens[0].type == "<IDENTIFIER>":
-        read(value)
-        build_tree("<ID:" + value + ">", 0)  
-
-        # Db -> <IDENTIFIER> Vb+ '=' E
-        if tokens[0].content in [",", "="]:  
-            procedure_Vl()
-            read("=")
-            procedure_E()
-            build_tree("=", 2)
-        
-        # Db -> Vl '=' E
-        else: 
-            n = 0
-        
-            while tokens[0].type == "<IDENTIFIER>" or tokens[0].type == "(":
-                procedure_Vb()
-                n += 1
-                
-            if n == 0:
-                print("Syntax error in line " + str(tokens[0].line) + ": Identifier or '(' expected")
-                exit(1)    
-                
-            if tokens[0].content == "=":
-                read("=")
-                procedure_E()
-                build_tree("function_form", n + 2)
-            else:
-                print("Syntax error in line " + str(tokens[0].line) + ": '=' expected")
-                exit(1)
-
-##############################################################
-def procedure_Vb(): 
-    # Vb -> <IDENTIFIER>
-    #    -> '(' Vl ')'
-    #    -> '(' ')' 
-    
-    value_1 = tokens[0].content 
-
-    # Vb -> <IDENTIFIER>
-    if tokens[0].type == "<IDENTIFIER>":
-        read(value_1)
-        build_tree("<ID:" + value_1 + ">", 0)     
-        
-    elif value_1 == "(":
-        read("(")
-        
-        value_2 = tokens[0].content 
-        
-        # Vb -> '(' ')'
-        if value_2 == ")":
-            read(")")
-            build_tree("()", 0)
-        
-        # Vb -> '(' Vl ')'
-        elif tokens[0].type == "<IDENTIFIER>": 
-            read(value_2)
-            build_tree("<ID:" + value_2 + ">", 0)    
-            procedure_Vl()
-            
-            if tokens[0].content == ")":
-                read(")")
-            else:
-                print("Syntax error in line " + str(tokens[0].line) + ": ')' expected")
-                exit(1)
-        else:
-            print("Syntax error in line " + str(tokens[0].line) + ": Identifier or ')' expected")
+            print(f"Syntax error at line {tokens[0].line}: Expected ')'")
             exit(1)
     else:
-        print("Syntax error in line " + str(tokens[0].line) + ": Identifier or '(' expected")
+        print(f"Syntax error at line {tokens[0].line}: Unexpected token '{val}' in Rn")
         exit(1)
-    
-##############################################################
-def procedure_Vl():
-    # Vl -> <IDENTIFIER> (',' <IDENTIFIER>)*   
-    n = 0
-    
-    while tokens[0].content == ",":
-        read(",")
-        
-        if tokens[0].type == "<IDENTIFIER>":
-            value = tokens[0].content
-            read(value)
-            build_tree("<ID:" + value + ">", 0)    
-            n += 1
+
+def D():
+    Da()
+    if tokens[0].content == "within":
+        expect("within")
+        D()
+        build_ATS("within", 2)
+
+def Da():
+    Dr()
+    and_count = 0
+    while tokens[0].content == "and":
+        expect("and")
+        Dr()
+        and_count += 1
+    if and_count > 0:
+        build_ATS("and", and_count + 1)
+
+def Dr():
+    if tokens[0].content == "rec":
+        expect("rec")
+        Db()
+        build_ATS("rec", 1)
+    else:
+        Db()
+
+def Db():
+    val = tokens[0].content
+    if val == "(":
+        expect("(")
+        D()
+        if tokens[0].content == ")":
+            expect(")")
         else:
-            print("Syntax error in line " + str(tokens[0].line) + ": Identifier expected")
-            
-    if n > 0:
-        build_tree(",", n + 1) 
+            print(f"Syntax error at line {tokens[0].line}: Expected ')' in Db")
+            exit(1)
+    elif tokens[0].type == "<IDENTIFIER>":
+        expect(val)
+        build_ATS(f"<ID:{val}>", 0)
+        if tokens[0].content in [",", "="]:
+            Vl()
+            expect("=")
+            E()
+            build_ATS("=", 2)
+        else:
+            vb_count = 0
+            while tokens[0].type == "<IDENTIFIER>" or tokens[0].type == "(":
+                Vb()
+                vb_count += 1
+            if vb_count == 0:
+                print(f"Syntax error at line {tokens[0].line}: Expected identifier or '(' in Db")
+                exit(1)
+            if tokens[0].content == "=":
+                expect("=")
+                E()
+                build_ATS("function_form", vb_count + 2)
+            else:
+                print(f"Syntax error at line {tokens[0].line}: Expected '=' in function binding")
+                exit(1)
+
+def Vb():
+    val1 = tokens[0].content
+    if tokens[0].type == "<IDENTIFIER>":
+        expect(val1)
+        build_ATS(f"<ID:{val1}>", 0)
+    elif val1 == "(":
+        expect("(")
+        val2 = tokens[0].content
+        if val2 == ")":
+            expect(")")
+            build_ATS("()", 0)
+        elif tokens[0].type == "<IDENTIFIER>":
+            expect(val2)
+            build_ATS(f"<ID:{val2}>", 0)
+            Vl()
+            if tokens[0].content == ")":
+                expect(")")
+            else:
+                print(f"Syntax error at line {tokens[0].line}: Expected ')' after variable list")
+                exit(1)
+        else:
+            print(f"Syntax error at line {tokens[0].line}: Expected identifier or ')' in variable binding")
+            exit(1)
+    else:
+        print(f"Syntax error at line {tokens[0].line}: Expected identifier or '(' in variable binding")
+        exit(1)
+
+def Vl():
+    comma_count = 0
+    while tokens[0].content == ",":
+        expect(",")
+        if tokens[0].type == "<IDENTIFIER>":
+            val = tokens[0].content
+            expect(val)
+            build_ATS(f"<ID:{val}>", 0)
+            comma_count += 1
+        else:
+            print(f"Syntax error at line {tokens[0].line}: Expected identifier after ','")
+    if comma_count > 0:
+        build_ATS(",", comma_count + 1)
