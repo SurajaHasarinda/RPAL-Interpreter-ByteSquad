@@ -2,15 +2,15 @@ import os
 import subprocess
 
 def run_tests():
-    # Get the path to the Tests directory
+    # Get the path to the tests directory
     tests_dir = os.path.join(os.getcwd(), 'tests')
     
-    # Check if Tests directory exists
+    # Check if tests directory exists
     if not os.path.exists(tests_dir):
-        print("Tests directory not found!")
+        print("tests directory not found!")
         return
     
-    # Get all files in Tests directory
+    # Get all files in tests directory
     test_files = os.listdir(tests_dir)
     
     print(f"Found {len(test_files)} test files")
@@ -18,7 +18,7 @@ def run_tests():
     
     # Run each test file
     for test_file in test_files:
-        test_path = os.path.join('Tests', test_file)
+        test_path = os.path.join('tests', test_file)
         print(f"\nTesting: {test_file}")
         print("-" * 30)
         
