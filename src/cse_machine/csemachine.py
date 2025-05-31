@@ -7,11 +7,11 @@ from src.cse_machine.structures import *
 control_structures = []
 count = 0
 control = []
-stack = Stack("CSE")                        # Stack for the CSE machine
+stack = Stack("CSE")
 environments = [Environment(0, None)]
 current_environment = 0
 builtInFunctions = ["Order", "Print", "print", "Conc", "Stern", "Stem", "Isinteger", "Istruthvalue", "Isstring", "Istuple", "Isfunction", "ItoS"]
-print_present = False
+output_flag  = False # To determine whether the output (Print) function is called in the program or not.
 
 
 def generate_control_structure(root, i):
@@ -20,7 +20,7 @@ def generate_control_structure(root, i):
     while(len(control_structures) <= i):
         control_structures.append([])
 
-    # When lambda is encountered, we have to generate a new control structure.
+    # Handle lambda expressions - create new control structure
     if (root.value == "lambda"):
         count += 1
         left_child = root.children[0]
@@ -42,6 +42,7 @@ def generate_control_structure(root, i):
         for child in root.children[1:]:
             generate_control_structure(child, count)
 
+    # Handle conditional expressions
     elif (root.value == "->"):
         count += 1
         temp = Delta(count)
@@ -54,6 +55,7 @@ def generate_control_structure(root, i):
         control_structures[i].append("beta")
         generate_control_structure(root.children[0], i)
 
+    # Handle tuple construction
     elif (root.value == "tau"):
         n = len(root.children)
         temp = Tau(n)
@@ -66,7 +68,7 @@ def generate_control_structure(root, i):
         for child in root.children:
             generate_control_structure(child, i)
 
-# This function is used for tokens that begin with '<' and end with '>'.
+# Retrieve the value of a variable or constant.
 def lookup(name):
     name = name[1:-1]
     info = name.split(":")
@@ -79,9 +81,6 @@ def lookup(name):
     
         if data_type == "INT":
             return int(value)
-        
-        # The rpal.exe program detects srings only when they begin with ' and end with '.
-        # Our code must emulate this behaviour.
         elif data_type == "STR":
             return value.strip("'")
         elif data_type == "ID":
@@ -106,19 +105,18 @@ def lookup(name):
         return False
     
 def built_in(function, argument):
-    global print_present
+    global output_flag 
     
-    # The Order function returns the length of a tuple.  
+    # Order function - returns tuple length  
     if (function == "Order"):
         order = len(argument)
         stack.push(order)
 
-    # The Print function prints the output to the command prompt.
+    # Print functions - output to console.
     elif (function == "Print" or function == "print"):
-        # We should print the output only when the 'Print' function is called in the program.
-        print_present = True
+        output_flag  = True
         
-        # If there are escape characters in the string, we need to format it properly.
+        # Handle escape sequences in strings
         if type(argument) == str:
             if "\\n" in argument:
                 argument = argument.replace("\\n", "\n")
@@ -127,57 +125,52 @@ def built_in(function, argument):
 
         stack.push(argument)
 
-    # The Conc function concatenates two strings.
+    # Conc function - string concatenation
     elif (function == "Conc"):
         stack_symbol = stack.pop()
         control.pop()
         temp = argument + stack_symbol
         stack.push(temp)
 
-    # The Stern function returns the string without the first letter.
+    # Stern function - string without first character
     elif (function == "Stern"):
         stack.push(argument[1:])
 
-    # The Stem function returns the first letter of the given string.
+    # Stem function - first character of string
     elif (function == "Stem"):
         stack.push(argument[0])
 
-    # The Isinteger function checks if the given argument is an integer.
+    # Type checking functions
     elif (function == "Isinteger"):
         if (type(argument) == int):
             stack.push(True)
         else:
             stack.push(False)
 
-    # The Istruthvalue function checks if the given argument is a boolean value.               
     elif (function == "Istruthvalue"):
         if (type(argument) == bool):
             stack.push(True)
         else:
             stack.push(False)
 
-    # The Isstring function checks if the given argument is a string.
     elif (function == "Isstring"):
         if (type(argument) == str):
             stack.push(True)
         else:
             stack.push(False)
 
-    # The Istuple function checks if the given argument is a tuple.
     elif (function == "Istuple"):
         if (type(argument) == tuple):
             stack.push(True)
         else:
             stack.push(False)
 
-    # The Isfunction function checks if the given argument is a built-in function.
     elif (function == "Isfunction"):
         if (argument in builtInFunctions):
             return True
         else:
             False
-    
-    # The ItoS function converts integers to strings.        
+         
     elif (function == "ItoS"):
         if (type(argument) == int):
             stack.push(str(argument))
@@ -185,7 +178,8 @@ def built_in(function, argument):
             print("Error: ItoS function can only accept integers.")
             exit()
 
-def apply_rules():
+# Apply the rules of the CSE machine to execute the program.
+def execute_machine():
     op = ["+", "-", "*", "/", "**", "gr", "ge", "ls", "le", "eq", "ne", "or", "&", "aug"]
     uop = ["neg", "not"]
 
@@ -345,35 +339,35 @@ def apply_rules():
     # Lambda expression becomes a lambda closure when its environment is determined.
     if type(stack[0]) == Lambda:
         stack[0] = "[lambda closure: " + str(stack[0].bounded_variable) + ": " + str(stack[0].number) + "]"
-         
+
+    # Check if the top of the stack is a tuple
     if type(stack[0]) == tuple:          
-        # The rpal.exe program prints the boolean values in lowercase. Our code must emulate this behaviour. 
         for i in range(len(stack[0])):
+            # If the element is a boolean, convert it to lowercase string ('true'/'false')
             if type(stack[0][i]) == bool:
                 stack[0] = list(stack[0])
                 stack[0][i] = str(stack[0][i]).lower()
                 stack[0] = tuple(stack[0])
-                
-        # The rpal.exe program does not print the comma when there is only one element in the tuple.
-        # Our code must emulate this behaviour.  
+
+        # If the tuple has only one element, format it with parentheses           
         if len(stack[0]) == 1:
             stack[0] = "(" + str(stack[0][0]) + ")"
         
-        # The rpal.exe program does not print inverted commas when an element in the tuple is a string.
-        # Our code must emulate this behaviour too. 
+       
         else: 
+            # If the tuple contains any string elements, format the entire tuple as a string
             if any(type(element) == str for element in stack[0]):
                 temp = "("
                 for element in stack[0]:
                     temp += str(element) + ", "
                 temp = temp[:-2] + ")"
                 stack[0] = temp
-                
-    # The rpal.exe program prints the boolean values in lowercase. Our code must emulate this behaviour.    
+
+    # Convert boolean values to lowercase strings.
     if stack[0] == True or stack[0] == False:
         stack[0] = str(stack[0]).lower()
 
-# The following function is called from the myrpal.py file.
+# Get the result of the CSE machine execution for a given file.
 def get_result(file_name):
     global control
 
@@ -386,7 +380,7 @@ def get_result(file_name):
 
     stack.push(environments[0].name)
 
-    apply_rules()
+    execute_machine()
 
-    if print_present:
+    if output_flag :
         print(stack[0])

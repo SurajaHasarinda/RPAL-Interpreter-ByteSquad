@@ -5,11 +5,11 @@ class Environment():
         self.children = []
         self.parent = parent
     
-    # This function adds a child to the current environment.    
+    # Add a child to the current environment.    
     def add_child(self, child):
         self.children.append(child)
         child.variables.update(self.variables)
     
-    # This function adds a variable to the current environment.    
+    # Add a variable to the current environment.    
     def add_variable(self, key, value):
         self.variables[key] = value
