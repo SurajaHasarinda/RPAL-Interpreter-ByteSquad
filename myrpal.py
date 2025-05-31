@@ -1,7 +1,7 @@
 from src.parser.parser import parse
 from src.parser.node import preorder_traversal
 from src.ast_to_st.standardizer import *
-from cse_machine.cse_machine import *
+from src.cse_machine.cse_machine import *
 import sys
 
 def main():
