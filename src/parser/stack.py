@@ -3,7 +3,7 @@ class Stack:
         self.stack = []
         self.type = stack_type
 
-    # Used for easier debugging by returning the stack as a string
+    # Debugging by returning the stack as a string
     def __repr__(self):
         return str(self.stack)
 
