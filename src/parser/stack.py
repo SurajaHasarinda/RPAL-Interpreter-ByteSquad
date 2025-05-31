@@ -1,37 +1,36 @@
 class Stack:
-    def __init__(self, type):
+    def __init__(self, stack_type):
         self.stack = []
-        self.type = type
-        
-    # The following method is implemented for debugging purposes.
+        self.type = stack_type
+
+    # Used for easier debugging by returning the stack as a string
     def __repr__(self):
         return str(self.stack)
-        
-    # The following three methods are implemented to make the class iterable and indexable.
+
+    # Enables indexing into the stack
     def __getitem__(self, index):
         return self.stack[index]
-    
+
     def __setitem__(self, index, value):
         self.stack[index] = value
-        
+
+    # Enables reversed iteration over the stack
     def __reversed__(self):
         return reversed(self.stack)
 
-    # The following function lets you push an item onto the stack.
+    # Adds an element to the top of the stack
     def push(self, item):
         self.stack.append(item)
 
-    # The following function lets you pop an item from the stack.
+    # Removes and returns the top element of the stack
     def pop(self):
-        if not self.is_empty():
-            return self.stack.pop()
-        else:
+        if self.is_empty():
             if self.type == "CSE":
-                print("Stack in CSE machine has become empty unexpectedly.")
+                print("Error: CSE stack is unexpectedly empty.")
             else:
-                print("Stack used for AST generation has become empty unexpectedly.")
+                print("Error: AST stack is unexpectedly empty.")
             exit(1)
+        return self.stack.pop()
 
-    # The following function lets you check whether the stack is empty.
     def is_empty(self):
         return len(self.stack) == 0

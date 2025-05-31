@@ -37,7 +37,7 @@ def main():
                     print()
                     
                     if "-st" in flags:
-                        st = make_standardized_tree(ast)
+                        st = get_standardized_tree(ast)
                         preorder_traversal(st)
                         
                         print() 

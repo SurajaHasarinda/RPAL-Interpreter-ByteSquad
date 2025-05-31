@@ -271,7 +271,7 @@ def Db():
             if tokens[0].content == "=":
                 expect("=")
                 E()
-                build_ATS("function_form", vb_count + 2)
+                build_ATS("fcn_from", vb_count + 2)
             else:
                 print(f"Syntax error at line {tokens[0].line}: Expected '=' in function binding")
                 exit(1)

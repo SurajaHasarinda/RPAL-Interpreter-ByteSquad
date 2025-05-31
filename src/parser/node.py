@@ -3,8 +3,8 @@ class Node:
         self.value = value
         self.children = []  
         self.level = 0
-
-# Recursively traverse each child node with increased level        
+       
+# Traverses the tree in preorder and prints each node's value
 def preorder_traversal(root):
     if root is None:
         return
