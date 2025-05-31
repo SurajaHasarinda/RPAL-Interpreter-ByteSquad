@@ -1,7 +1,7 @@
 from src.lexer.lexical_analyzer import tokenize
 
 # Processes a file to tokenize its contents, filters out unwanted tokens, and identifies invalid ones.
-def filter_tokens(file_name):
+def screener(file_name):
 
     # RPAL keywords
     keywords = {"let", "in", "where", "rec", "fn", "aug", "or", "not", "gr", "ge", 

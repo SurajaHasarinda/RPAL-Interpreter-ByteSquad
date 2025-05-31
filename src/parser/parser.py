@@ -1,4 +1,4 @@
-from src.lexer.token_filter import filter_tokens
+from src.lexer.screener import screener
 from src.parser.stack import Stack
 from src.parser.node import *
 
@@ -26,7 +26,7 @@ def expect(token_value):
 
 def parse(file_path):
     global tokens
-    tokens, has_invalid, bad_token = filter_tokens(file_path)
+    tokens, has_invalid, bad_token = screener(file_path)
     if has_invalid:
         print(f"Invalid token at line {bad_token.line}: {bad_token.content}")
         exit(1)
