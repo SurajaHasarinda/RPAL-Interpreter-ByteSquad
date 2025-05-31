@@ -1,0 +1,19 @@
+
+├── myrpal.py # Main entry point
+├── src/
+│   ├── ast_to_st/
+│   │   └── standardizer.py
+│   ├── cse_machine/
+│   │   ├── cse_machine.py
+│   │   ├── environment.py
+│   │   └── cse_structures.py
+│   ├── lexer/
+│   │   ├── lexical_analyzer.py
+│   │   ├── screener.py
+│   │   └── token.py
+│   └── parser/
+│       ├── node.py
+│       ├── parser.py
+│       └── stack.py
+├── test.py
+└── tests/
