@@ -1,6 +1,6 @@
 from src.ast_to_st.standardizer import standardize
 from src.parser.node import *
-from src.cse_machine.environment import Environment
+from src.cse_machine.cse_env import Environment
 from src.parser.stack import Stack
 from src.cse_machine.cse_structures import *
 

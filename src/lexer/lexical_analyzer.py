@@ -59,7 +59,7 @@ def tokenize(characters):
                 i += 1
                 add_token("".join(characters[start:i]), '<STRING>')
             else:
-                print("Error: String is not closed properly.")
+                print("Error: Unclosed string literal")
                 exit(1)
         
         # Punctuation
@@ -88,7 +88,7 @@ def tokenize(characters):
         
         # Invalid character
         else:
-            print(f"Error: Invalid character '{current_char}' at position {i}")
+            print(f"Error: Invalid character '{current_char}'")
             exit(1)
     
     # Mark first and last tokens

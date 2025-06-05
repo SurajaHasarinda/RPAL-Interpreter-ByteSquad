@@ -9,14 +9,14 @@ def build_ATS(label, child_count):
     node.children = [None] * child_count
     for idx in range(child_count):
         if ast_builder.is_empty():
-            print("Error: AST stack is empty during node creation.")
+            print("Error: AST stack is empty.")
             exit(1)
         node.children[child_count - idx - 1] = ast_builder.pop()
     ast_builder.push(node)
 
 def expect(token_value):
     if tokens[0].content != token_value:
-        print(f"Syntax error at line {tokens[0].line}: Expected '{token_value}', found '{tokens[0].content}'")
+        print(f"Syntax Error: line {tokens[0].line}")
         exit(1)
     if not tokens[0].is_last_token:
         del tokens[0]
@@ -28,13 +28,13 @@ def parse(file_path):
     global tokens
     tokens, has_invalid, bad_token = screener(file_path)
     if has_invalid:
-        print(f"Invalid token at line {bad_token.line}: {bad_token.content}")
+        print(f"Error: Invalid token at line {bad_token.line}: {bad_token.content}")
         exit(1)
     E()
     if not ast_builder.is_empty():
         return ast_builder.pop()
     else:
-        print("Error: AST stack is empty after parsing.")
+        print(f"Syntax Error: line {tokens[0].line}")
         exit(1)
 
 def E():
@@ -46,7 +46,7 @@ def E():
             E()
             build_ATS("let", 2)
         else:
-            print(f"Syntax error at line {tokens[0].line}: Missing 'in' after 'let'")
+            print(f"Syntax Error: line {tokens[0].line}")
             exit(1)
     elif tokens[0].content == "fn":
         expect("fn")
@@ -55,14 +55,14 @@ def E():
             Vb()
             vb_count += 1
         if vb_count == 0:
-            print(f"Syntax error at line {tokens[0].line}: Expected identifier or '(' after 'fn'")
+            print(f"Syntax Error: line {tokens[0].line}")
             exit(1)
         if tokens[0].content == ".":
             expect(".")
             E()
             build_ATS("lambda", vb_count + 1)
         else:
-            print(f"Syntax error at line {tokens[0].line}: Expected '.' after variable bindings")
+            print(f"Syntax Error: line {tokens[0].line}")
             exit(1)
     else:
         Ew()
@@ -101,7 +101,7 @@ def Tc():
             Tc()
             build_ATS("->", 3)
         else:
-            print(f"Syntax error at line {tokens[0].line}: Expected '|' after '->'")
+            print(f"Syntax Error: line {tokens[0].line}")
             exit(1)
 
 def B():
@@ -182,7 +182,7 @@ def Ap():
             R()
             build_ATS("@", 3)
         else:
-            print(f"Syntax error at line {tokens[0].line}: Expected identifier after '@'")
+            print(f"Syntax Error: line {tokens[0].line}")
             exit(1)
 
 def R():
@@ -211,10 +211,10 @@ def Rn():
         if tokens[0].content == ")":
             expect(")")
         else:
-            print(f"Syntax error at line {tokens[0].line}: Expected ')'")
+            print(f"Syntax Error: line {tokens[0].line}")
             exit(1)
     else:
-        print(f"Syntax error at line {tokens[0].line}: Unexpected token '{val}' in Rn")
+        print(f"Syntax Error: line {tokens[0].line}")
         exit(1)
 
 def D():
@@ -250,7 +250,7 @@ def Db():
         if tokens[0].content == ")":
             expect(")")
         else:
-            print(f"Syntax error at line {tokens[0].line}: Expected ')' in Db")
+            print(f"Syntax Error: line {tokens[0].line}")
             exit(1)
     elif tokens[0].type == "<IDENTIFIER>":
         expect(val)
@@ -266,14 +266,14 @@ def Db():
                 Vb()
                 vb_count += 1
             if vb_count == 0:
-                print(f"Syntax error at line {tokens[0].line}: Expected identifier or '(' in Db")
+                print(f"Syntax Error: line {tokens[0].line}")
                 exit(1)
             if tokens[0].content == "=":
                 expect("=")
                 E()
                 build_ATS("fcn_from", vb_count + 2)
             else:
-                print(f"Syntax error at line {tokens[0].line}: Expected '=' in function binding")
+                print(f"Syntax Error: line {tokens[0].line}")
                 exit(1)
 
 def Vb():
@@ -294,13 +294,13 @@ def Vb():
             if tokens[0].content == ")":
                 expect(")")
             else:
-                print(f"Syntax error at line {tokens[0].line}: Expected ')' after variable list")
+                print(f"Syntax Error: line {tokens[0].line}")
                 exit(1)
         else:
-            print(f"Syntax error at line {tokens[0].line}: Expected identifier or ')' in variable binding")
+            print(f"Syntax Error: line {tokens[0].line}")
             exit(1)
     else:
-        print(f"Syntax error at line {tokens[0].line}: Expected identifier or '(' in variable binding")
+        print(f"Syntax Error: line {tokens[0].line}")
         exit(1)
 
 def Vl():
@@ -313,6 +313,6 @@ def Vl():
             build_ATS(f"<ID:{val}>", 0)
             comma_count += 1
         else:
-            print(f"Syntax error at line {tokens[0].line}: Expected identifier after ','")
+            print(f"Syntax Error: line {tokens[0].line}")
     if comma_count > 0:
         build_ATS(",", comma_count + 1)

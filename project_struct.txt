@@ -5,7 +5,7 @@
 │   │   └── standardizer.py
 │   ├── cse_machine/
 │   │   ├── cse_machine.py
-│   │   ├── environment.py
+│   │   ├── cse_env.py
 │   │   └── cse_structures.py
 │   ├── lexer/
 │   │   ├── lexical_analyzer.py

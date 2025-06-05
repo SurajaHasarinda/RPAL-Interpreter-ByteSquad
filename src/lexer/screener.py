@@ -14,7 +14,7 @@ def screener(file_name):
         print(f"Error: File '{file_name}' not found.")
         exit(1)
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"Error: {e}")
         exit(1)
 
     token_list = tokenize(characters)

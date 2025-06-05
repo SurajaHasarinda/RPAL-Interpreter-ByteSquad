@@ -3,10 +3,6 @@ class Stack:
         self.stack = []
         self.type = stack_type
 
-    # Debugging by returning the stack as a string
-    def __repr__(self):
-        return str(self.stack)
-
     # Enables indexing into the stack
     def __getitem__(self, index):
         return self.stack[index]
@@ -26,9 +22,9 @@ class Stack:
     def pop(self):
         if self.is_empty():
             if self.type == "CSE":
-                print("Error: CSE stack is unexpectedly empty.")
+                print("Error: CSE stack is empty.")
             else:
-                print("Error: AST stack is unexpectedly empty.")
+                print("Error: AST stack is empty.")
             exit(1)
         return self.stack.pop()
 
