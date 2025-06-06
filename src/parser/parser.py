@@ -37,6 +37,9 @@ def parse(file_path):
         print(f"Syntax Error: line {tokens[0].line}")
         exit(1)
 
+# E -> 'let' D 'in' E
+#   -> 'fn' Vb+ '.' E
+#   -> Ew;
 def E():
     if tokens[0].content == "let":
         expect("let")
@@ -67,6 +70,8 @@ def E():
     else:
         Ew()
 
+# Ew -> T 'where' Dr
+#    -> T;
 def Ew():
     T()
     if tokens[0].content == "where":
@@ -74,6 +79,8 @@ def Ew():
         Dr()
         build_ATS("where", 2)
 
+# T -> Ta (',' Ta)+
+#   -> Ta;
 def T():
     Ta()
     tau_count = 0
@@ -84,6 +91,8 @@ def T():
     if tau_count > 0:
         build_ATS("tau", tau_count + 1)
 
+# Ta -> Ta 'aug' Tc
+#    -> Tc;
 def Ta():
     Tc()
     while tokens[0].content == "aug":
@@ -91,6 +100,8 @@ def Ta():
         Tc()
         build_ATS("aug", 2)
 
+# Tc -> B '->' Tc '|' Tc
+#    -> B;
 def Tc():
     B()
     if tokens[0].content == "->":
@@ -104,6 +115,8 @@ def Tc():
             print(f"Syntax Error: line {tokens[0].line}")
             exit(1)
 
+# B -> B 'or' Bt
+#   -> Bt;
 def B():
     Bt()
     while tokens[0].content == "or":
@@ -111,6 +124,8 @@ def B():
         Bt()
         build_ATS("or", 2)
 
+# Bt -> Bt '&' Bs
+#    -> Bs;
 def Bt():
     Bs()
     while tokens[0].content == "&":
@@ -118,6 +133,8 @@ def Bt():
         Bs()
         build_ATS("&", 2)
 
+# Bs -> 'not' Bp
+#    -> Bp;
 def Bs():
     if tokens[0].content == "not":
         expect("not")
@@ -126,6 +143,13 @@ def Bs():
     else:
         Bp()
 
+# Bp -> A ('gr' | '>' ) A
+#    -> A ('ge' | '>=') A
+#    -> A ('ls' | '<' ) A
+#    -> A ('le' | '<=') A
+#    -> A 'eq' A
+#    -> A 'ne' A
+#    -> A;
 def Bp():
     A()
     if tokens[0].content in ["gr", ">", "ge", ">=", "ls", "<", "le", "<=", "eq", "ne"]:
@@ -141,6 +165,11 @@ def Bp():
         }
         build_ATS(op_map[op], 2)
 
+# A -> A '+' At
+#   -> A '-' At
+#   -> '+' At
+#   -> '-' At
+#   -> At;
 def A():
     if tokens[0].content == "+":
         expect("+")
@@ -157,6 +186,9 @@ def A():
         At()
         build_ATS(op, 2)
 
+# At -> At '*' Af
+#    -> At '/' Af
+#    -> Af;
 def At():
     Af()
     while tokens[0].content in ["*", "/"]:
@@ -165,6 +197,8 @@ def At():
         Af()
         build_ATS(op, 2)
 
+# Af -> Ap '**' Af
+#    -> Ap;
 def Af():
     Ap()
     if tokens[0].content == "**":
@@ -172,6 +206,8 @@ def Af():
         Af()
         build_ATS("**", 2)
 
+# Ap -> Ap '@' '<IDENTIFIER>' R
+#    -> R;
 def Ap():
     R()
     while tokens[0].content == "@":
@@ -185,12 +221,22 @@ def Ap():
             print(f"Syntax Error: line {tokens[0].line}")
             exit(1)
 
+# R -> R Rn
+#   -> Rn;
 def R():
     Rn()
     while tokens[0].type in ["<IDENTIFIER>", "<INTEGER>", "<STRING>"] or tokens[0].content in ["true", "false", "nil", "(", "dummy"]:
         Rn()
         build_ATS("gamma", 2)
 
+# Rn -> '<IDENTIFIER>'
+#    -> '<INTEGER>'
+#    -> '<STRING>'
+#    -> 'true'
+#    -> 'false'
+#    -> 'nil'
+#    -> '(' E ')'
+#    -> 'dummy';
 def Rn():
     val = tokens[0].content
     if tokens[0].type == "<IDENTIFIER>":
@@ -217,6 +263,8 @@ def Rn():
         print(f"Syntax Error: line {tokens[0].line}")
         exit(1)
 
+# D -> Da 'within' D
+#   -> Da;
 def D():
     Da()
     if tokens[0].content == "within":
@@ -224,6 +272,8 @@ def D():
         D()
         build_ATS("within", 2)
 
+# Da -> Dr ('and' Dr)+
+#    -> Dr;
 def Da():
     Dr()
     and_count = 0
@@ -234,6 +284,8 @@ def Da():
     if and_count > 0:
         build_ATS("and", and_count + 1)
 
+# Dr -> 'rec' Db
+#    -> Db;
 def Dr():
     if tokens[0].content == "rec":
         expect("rec")
@@ -242,6 +294,9 @@ def Dr():
     else:
         Db()
 
+# Db -> Vl '=' E
+#    -> '<IDENTIFIER>' Vb+ '=' E
+#    -> '(' D ')';
 def Db():
     val = tokens[0].content
     if val == "(":
@@ -276,6 +331,9 @@ def Db():
                 print(f"Syntax Error: line {tokens[0].line}")
                 exit(1)
 
+# Vb -> '<IDENTIFIER>'
+#     -> '(' Vl ')'
+#     -> '()';
 def Vb():
     val1 = tokens[0].content
     if tokens[0].type == "<IDENTIFIER>":
@@ -303,6 +361,7 @@ def Vb():
         print(f"Syntax Error: line {tokens[0].line}")
         exit(1)
 
+# Vl -> '<IDENTIFIER>' list ',';
 def Vl():
     comma_count = 0
     while tokens[0].content == ",":
