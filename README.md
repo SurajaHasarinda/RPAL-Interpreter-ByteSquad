@@ -16,6 +16,14 @@ python .\myrpal.py <file_name>
 
 Where `file_name` is the path to your RPAL program file.
 
+## 🧪 Running Tests
+
+To run the tests, execute the following command:
+
+```bash
+python test.py
+```
+
 ### 🔧 Command Line Switches
 
 The following switches are available:
